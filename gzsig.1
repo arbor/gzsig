@@ -1,0 +1,86 @@
+.\" $Id: gzsig.1,v 1.1.1.1 2001/12/15 00:20:46 dirt Exp $
+.\"
+.\" Copyright (c) 2001 Dug Song <dugsong@arbor.net>
+.\" Copyright (c) 2001 Arbor Networks, Inc.
+.\"
+.Dd July 6, 2001
+.Dt GZSIG 1
+.Sh NAME
+.Nm gzsig
+.Nd gzip signing utility
+.Sh SYNOPSIS
+.Nm gzsig sign
+.Ar privkey
+.Ar
+.Pp
+.Nm gzsig verify
+.Ar pubkey
+.Ar
+.Sh DESCRIPTION
+.Nm
+embeds or verifies RSA PKCS #1 v2.0 or DSA SHA1 signatures in
+.Xr gzip 1
+compressed files using SSH-1 identity keys, X509 certificates, or
+KeyNote public/private key pairs.
+.Pp
+The signature is computed over the compressed data, CRC-32 checksum,
+and original file length only. 
+.Pp
+The
+.Ar file
+operands are processed in command-line order. If 
+.Ar file
+is a single dash
+.Pq Sq \&-
+,
+.Nm
+reads from standard input.
+.Pp
+The options are as follows:
+.Bl -tag -width Ds
+.It Nm sign
+Sign the input using the private key in
+.Ar privkey .
+.It Nm verify
+Verify the signature using the public key in
+.Ar pubkey .
+.El
+.Pp
+The
+.Nm
+utility exits 0 on success or >0 if an error occured.
+.Sh EXAMPLES
+Sign 
+.Ar file1
+and
+.Ar file2
+with the SSH-1 identity key in
+.Ar ~/.ssh/identity 
+.Bd -literal -offset indent
+gzsign sign ~/.ssh/identity file1 file2
+.Ed
+.Pp
+Sign
+.Ar file1
+with the SSH-1 identity key, saving the signed file in
+.Ar file2 
+.Bd -literal -offset indent
+gzsign sign ~/.ssh/identity - < file1 > file2
+.Ed
+.Pp
+Verify the signature on
+.Ar file1
+using the SSL certificate in
+.Ar /etc/ssl/server.crt 
+.Bd -literal -offset indent
+gzsign verify /etc/ssl/server.crt file1
+.Ed
+.Pp
+.Sh SEE ALSO
+.Xr gzip 1 ,
+.Xr keynote 1 ,
+.Xr ssh-keygen 1 ,
+.Xr ssl 8
+.Sh AUTHORS
+Dug Song
+.Aq dugsong@arbor.net
