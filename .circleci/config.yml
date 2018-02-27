@@ -9,12 +9,10 @@ jobs:
 
     steps:
       - run: apt-get update 
-      - run: apt-get install -y build-essential libssl-dev curl git
+      - run: apt-get install -y build-essential libssl-dev curl git automake
       - checkout
       - run: git fetch --unshallow || true
-      - run: touch aclocal.m4
-      - run: touch configure
-      - run: find . -name '*.in' -print -exec touch '{}' ';'
+      - run: automake
       - run: ./configure
       - run: make
       - run: make install
