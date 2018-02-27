@@ -1,7 +1,8 @@
 /*
- * ssh.h
+ * key.h
  *
- * Copyright (c) 2001 Dug Song <dugsong@monkey.org>
+ * Copyright (c) 2001 Dug Song <dugsong@arbor.net>
+ * Copyright (c) 2001 Arbor Networks, Inc.
  *
  *   Redistribution and use in source and binary forms, with or without
  *   modification, are permitted provided that the following conditions
@@ -27,13 +28,30 @@
  *   OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  *   ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * $Vendor: ssh.h,v 1.2 2005/04/01 16:47:31 dugsong Exp $
+ * $Vendor: key.h,v 1.2 2005/04/01 16:47:31 dugsong Exp $
  */
 
-#ifndef SSH_H
-#define SSH_H
+#ifndef KEY_H
+#define KEY_H
 
-int	ssh_load_public(struct key *k, struct iovec *iov);
-int	ssh_load_private(struct key *k, struct iovec *iov);
+enum key_type {
+	KEY_UNSPEC,
+	KEY_RSA,
+	KEY_DSA
+};
 
-#endif /* SSH_H */
+struct key {
+	int	 type;
+	void	*data;
+};
+
+struct key	*key_new(void);
+int		 key_load_public(struct key *k, char *filename);
+int		 key_load_private(struct key *k, char *filename);
+int		 key_sign(struct key *k, u_char *msg, int mlen,
+	             u_char *sig, int slen);
+int		 key_verify(struct key *k, u_char *msg, int mlen,
+	             u_char *sig, int slen);
+void		 key_free(struct key *k);
+
+#endif /* KEY_H */

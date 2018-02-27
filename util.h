@@ -1,7 +1,9 @@
+/* $OpenBSD: util.h,v 1.4 2013/03/10 10:36:57 tobias Exp $ */
 /*
- * ssh.h
+ * util.h
  *
- * Copyright (c) 2001 Dug Song <dugsong@monkey.org>
+ * Copyright (c) 2001 Dug Song <dugsong@arbor.net>
+ * Copyright (c) 2001 Arbor Networks, Inc.
  *
  *   Redistribution and use in source and binary forms, with or without
  *   modification, are permitted provided that the following conditions
@@ -27,13 +29,13 @@
  *   OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  *   ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * $Vendor: ssh.h,v 1.2 2005/04/01 16:47:31 dugsong Exp $
+ * $Vendor: util.h,v 1.2 2005/04/01 16:47:31 dugsong Exp $
  */
 
-#ifndef SSH_H
-#define SSH_H
+#ifndef UTIL_H
 
-int	ssh_load_public(struct key *k, struct iovec *iov);
-int	ssh_load_private(struct key *k, struct iovec *iov);
+int		copy_permissions(int srcfd, int dstfd);
+int		skip_string(FILE *fin);
+void		fatal(int status, const char *fmt, ...);
 
-#endif /* SSH_H */
+#endif /* UTIL_H */
