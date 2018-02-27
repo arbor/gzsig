@@ -1,7 +1,10 @@
+/* $OpenBSD: util.c,v 1.4 2013/03/10 10:36:57 tobias Exp $ */
+
 /*
- * ssh.h
+ * util.c
  *
- * Copyright (c) 2001 Dug Song <dugsong@monkey.org>
+ * Copyright (c) 2001 Dug Song <dugsong@arbor.net>
+ * Copyright (c) 2001 Arbor Networks, Inc.
  *
  *   Redistribution and use in source and binary forms, with or without
  *   modification, are permitted provided that the following conditions
@@ -27,13 +30,59 @@
  *   OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  *   ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * $Vendor: ssh.h,v 1.2 2005/04/01 16:47:31 dugsong Exp $
+ * $Vendor: util.c,v 1.2 2005/04/01 16:47:31 dugsong Exp $
  */
 
-#ifndef SSH_H
-#define SSH_H
+#include <sys/types.h>
+#include <sys/stat.h>
 
-int	ssh_load_public(struct key *k, struct iovec *iov);
-int	ssh_load_private(struct key *k, struct iovec *iov);
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <string.h>
+#include <unistd.h>
 
-#endif /* SSH_H */
+#include "util.h"
+
+int
+copy_permissions(int srcfd, int dstfd)
+{
+	struct stat st;
+
+	if (fstat(srcfd, &st) < 0)
+		return (-1);
+
+	if (fchown(dstfd, st.st_uid, st.st_gid) < 0)
+		return (-1);
+
+	if (fchmod(dstfd, st.st_mode) < 0)
+		return (-1);
+
+	return (0);
+}
+
+int
+skip_string(FILE *fin)
+{
+	int c;
+
+	while ((c = getc(fin)) != '\0')
+		if (c == EOF)
+			return (-1);
+	return (0);
+}
+
+void
+fatal(int status, const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	vfprintf(stderr, fmt, ap);
+	va_end(ap);
+
+	fprintf(stderr, "\n");
+
+	exit(status);
+}

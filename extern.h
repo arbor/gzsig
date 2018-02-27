@@ -1,7 +1,8 @@
 /*
- * ssh.h
+ * extern.h
  *
- * Copyright (c) 2001 Dug Song <dugsong@monkey.org>
+ * Copyright (c) 2001 Dug Song <dugsong@arbor.net>
+ * Copyright (c) 2001 Arbor Networks, Inc.
  *
  *   Redistribution and use in source and binary forms, with or without
  *   modification, are permitted provided that the following conditions
@@ -27,13 +28,20 @@
  *   OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  *   ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * $Vendor: ssh.h,v 1.2 2005/04/01 16:47:31 dugsong Exp $
+ * $Vendor: extern.h,v 1.2 2005/04/01 16:47:31 dugsong Exp $
  */
 
-#ifndef SSH_H
-#define SSH_H
+#ifndef EXTERN_H
+#define EXTERN_H
 
-int	ssh_load_public(struct key *k, struct iovec *iov);
-int	ssh_load_private(struct key *k, struct iovec *iov);
+void	sign(int argc, char *argv[]);
+void	verify(int argc, char *argv[]);
 
-#endif /* SSH_H */
+int     sign_passwd_cb(char *buf, int size, int rwflag, void *u);
+
+void	sign_usage(void);
+void	verify_usage(void);
+
+extern char *__progname;		/* from crt0.o */
+
+#endif /* EXTERN_H */

@@ -1,3 +1,5 @@
+/* $OpenBSD: ssh.c,v 1.3 2014/04/16 05:16:39 miod Exp $ */
+
 /*
  * ssh.c
  *
@@ -5,20 +7,37 @@
  * Copyright (c) 2000 Niels Provos <provos@monkey.org>
  * Copyright (c) 2000 Markus Friedl <markus@monkey.org>
  *
- * $Id: ssh.c,v 1.1.1.1 2001/12/15 00:20:46 dirt Exp $
+ *   Redistribution and use in source and binary forms, with or without
+ *   modification, are permitted provided that the following conditions
+ *   are met:
+ * 
+ *   1. Redistributions of source code must retain the above copyright
+ *      notice, this list of conditions and the following disclaimer.
+ *   2. Redistributions in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *   3. The names of the copyright holders may not be used to endorse or
+ *      promote products derived from this software without specific
+ *      prior written permission.
+ * 
+ *   THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
+ *   AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
+ *   THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ *   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ *   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ *   OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ *   WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ *   OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+ *   ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * $Vendor: ssh.c,v 1.2 2005/04/01 16:47:31 dugsong Exp $
  */
-
-#if HAVE_CONFIG_H
-#include <config.h>
-#endif
 
 #include <sys/types.h>
 #include <sys/uio.h>
 
 #include <arpa/nameser.h>
-#if HAVE_ARPA_NAMESER_COMPAT_H
-#include <arpa/nameser_compat.h>
-#endif
 #include <openssl/ssl.h>
 #include <openssl/des.h>
 #include <openssl/md5.h>
@@ -29,18 +48,21 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "pkey.h"
+#include "key.h"
 #include "ssh.h"
+#include "patch.h"
 
 #define SSH1_MAGIC		"SSH PRIVATE KEY FILE FORMAT 1.1\n"
 
+extern int sign_passwd_cb(char *, int, int, void *);
+
 struct des3_state {
-	des_key_schedule	k1, k2, k3;
-	des_cblock		iv1, iv2, iv3;
+	DES_key_schedule	k1, k2, k3;
+	DES_cblock		iv1, iv2, iv3;
 };
 
 static int
-_get_bn(BIGNUM *bn, u_char **pp, int *lenp)
+get_bn(BIGNUM *bn, u_char **pp, int *lenp)
 {
 	short i;
 
@@ -64,7 +86,7 @@ _get_bn(BIGNUM *bn, u_char **pp, int *lenp)
 }
 
 static int
-_get_string(char *dst, int len, u_char **pp, int *lenp)
+get_string(char *dst, int len, u_char **pp, int *lenp)
 {
 	long i;
 	
@@ -86,7 +108,7 @@ _get_string(char *dst, int len, u_char **pp, int *lenp)
 }
 
 static int
-_read_ssh1_bn(BIGNUM *value, char **cpp)
+read_ssh1_bn(BIGNUM *value, char **cpp)
 {
 	char *cp = *cpp;
 	int old;
@@ -132,13 +154,13 @@ des3_init(u_char *sesskey, int len)
 	if ((state = malloc(sizeof(*state))) == NULL)
 		return (NULL);
 
-	des_set_key((void *)sesskey, state->k1);
-	des_set_key((void *)(sesskey + 8), state->k2);
+	DES_set_key((const_DES_cblock *)sesskey, &state->k1);
+	DES_set_key((const_DES_cblock *)(sesskey + 8), &state->k2);
 
 	if (len <= 16)
-		des_set_key((void *)sesskey, state->k3);
+		DES_set_key((const_DES_cblock *)sesskey, &state->k3);
 	else
-		des_set_key((void *)(sesskey + 16), state->k3);
+		DES_set_key((const_DES_cblock *)(sesskey + 16), &state->k3);
 	
 	memset(state->iv1, 0, 8);
 	memset(state->iv2, 0, 8);
@@ -155,13 +177,13 @@ des3_decrypt(u_char *src, u_char *dst, int len, void *state)
 	dstate = (struct des3_state *)state;
 	memcpy(dstate->iv1, dstate->iv2, 8);
 	
-	des_ncbc_encrypt(src, dst, len, dstate->k3, &dstate->iv3, DES_DECRYPT);
-	des_ncbc_encrypt(dst, dst, len, dstate->k2, &dstate->iv2, DES_ENCRYPT);
-	des_ncbc_encrypt(dst, dst, len, dstate->k1, &dstate->iv1, DES_DECRYPT);
+	DES_ncbc_encrypt(src, dst, len, &dstate->k3, &dstate->iv3, DES_DECRYPT);
+	DES_ncbc_encrypt(dst, dst, len, &dstate->k2, &dstate->iv2, DES_ENCRYPT);
+	DES_ncbc_encrypt(dst, dst, len, &dstate->k1, &dstate->iv1, DES_DECRYPT);
 }
 
 static int
-_load_ssh1_public(RSA *rsa, struct iovec *iov)
+load_ssh1_public(RSA *rsa, struct iovec *iov)
 {
 	char *p;
 	u_int bits;
@@ -181,22 +203,22 @@ _load_ssh1_public(RSA *rsa, struct iovec *iov)
 		return (-1);
 	
 	/* Get public exponent, public modulus. */
-	if (_read_ssh1_bn(rsa->e, &p) < 0)
+	if (read_ssh1_bn(rsa->e, &p) < 0)
 		return (-1);
 		
-	if (_read_ssh1_bn(rsa->n, &p) < 0)
+	if (read_ssh1_bn(rsa->n, &p) < 0)
 		return (-1);
 
 	return (0);
 }
 
 static int
-_load_ssh1_private(RSA *rsa, struct iovec *iov)
+load_ssh1_private(RSA *rsa, struct iovec *iov)
 {
 	BN_CTX *ctx;
 	BIGNUM *aux;
 	MD5_CTX md;
-	char *pass, prompt[128], comment[BUFSIZ];
+	char pass[128], comment[BUFSIZ];
 	u_char *p, cipher_type, digest[16];
 	void *dstate;
 	int i;
@@ -216,19 +238,17 @@ _load_ssh1_private(RSA *rsa, struct iovec *iov)
 	i -= 1 + 4 + 4;
 
 	/* Read public key. */
-	if (_get_bn(rsa->n, &p, &i) < 0 || _get_bn(rsa->e, &p, &i) < 0)
+	if (get_bn(rsa->n, &p, &i) < 0 || get_bn(rsa->e, &p, &i) < 0)
 		return (-1);
 	
 	/* Read comment. */
-	if (_get_string(comment, sizeof(comment), &p, &i) < 0)
+	if (get_string(comment, sizeof(comment), &p, &i) < 0)
 		return (-1);
 	
 	/* Decrypt private key. */
 	if (cipher_type != 0) {
-		snprintf(prompt, sizeof(prompt),
-		    "Enter SSH passphrase for %s: ", comment);
-		pass = getpass(prompt);
-		
+		sign_passwd_cb(pass, sizeof(pass), 0, NULL);
+
 		MD5_Init(&md);
 		MD5_Update(&md, (const u_char *)pass, strlen(pass));
 		MD5_Final(digest, &md);
@@ -252,11 +272,13 @@ _load_ssh1_private(RSA *rsa, struct iovec *iov)
 	i -= 4;
 	
 	/* Read the private key. */
-	if (_get_bn(rsa->d, &p, &i) < 0 || _get_bn(rsa->iqmp, &p, &i) < 0)
+	if (get_bn(rsa->d, &p, &i) < 0 ||
+	    get_bn(rsa->iqmp, &p, &i) < 0)
 		return (-1);
 	
 	/* In SSL and SSH v1 p and q are exchanged. */
-	if (_get_bn(rsa->q, &p, &i) < 0 || _get_bn(rsa->p, &p, &i) < 0)
+	if (get_bn(rsa->q, &p, &i) < 0 ||
+	    get_bn(rsa->p, &p, &i) < 0)
 		return (-1);
 	
 	/* Calculate p-1 and q-1. */
@@ -276,7 +298,7 @@ _load_ssh1_private(RSA *rsa, struct iovec *iov)
 }
 
 int
-ssh_load_public(struct pkey *k, struct iovec *iov)
+ssh_load_public(struct key *k, struct iovec *iov)
 {
 	RSA *rsa;
 	
@@ -285,18 +307,18 @@ ssh_load_public(struct pkey *k, struct iovec *iov)
 	rsa->n = BN_new();
 	rsa->e = BN_new();
 
-	if (_load_ssh1_public(rsa, iov) < 0) {
+	if (load_ssh1_public(rsa, iov) < 0) {
 		RSA_free(rsa);
 		return (-1);
 	}
-	k->type = PKEY_RSA;
+	k->type = KEY_RSA;
 	k->data = (void *)rsa;
 	
 	return (0);
 }
 
 int
-ssh_load_private(struct pkey *k, struct iovec *iov)
+ssh_load_private(struct key *k, struct iovec *iov)
 {
 	RSA *rsa;
 	
@@ -312,11 +334,12 @@ ssh_load_private(struct pkey *k, struct iovec *iov)
 	rsa->dmq1 = BN_new();
 	rsa->dmp1 = BN_new();
 	
-	if (_load_ssh1_private(rsa, iov) < 0) {
+	if (load_ssh1_private(rsa, iov) < 0) {
 		RSA_free(rsa);
 		return (-1);
+
 	}
-	k->type = PKEY_RSA;
+	k->type = KEY_RSA;
 	k->data = (void *)rsa;
 	
 	return (0);
