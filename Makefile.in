@@ -104,7 +104,8 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(man1dir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_gzsig_OBJECTS = gzsig.$(OBJEXT) pkey.$(OBJEXT) ssh.$(OBJEXT) \
+am_gzsig_OBJECTS = gzsig.$(OBJEXT) key.$(OBJEXT) sign.$(OBJEXT) \
+	ssh.$(OBJEXT) ssh2.$(OBJEXT) util.$(OBJEXT) verify.$(OBJEXT) \
 	x509.$(OBJEXT)
 gzsig_OBJECTS = $(am_gzsig_OBJECTS)
 gzsig_DEPENDENCIES = @LIBOBJS@
@@ -308,11 +309,11 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign no-dependencies
-INCLUDES = @KNINC@ @OPENSSL_INCLUDES@
-gzsig_SOURCES = gzsig.c gzip.h pkey.h pkey.c ssh.h ssh.c x509.h x509.c
-gzsig_LDADD = @LIBOBJS@ @KNLIB@ @OPENSSL_LDFLAGS@ @OPENSSL_LIBS@
+INCLUDES = @OPENSSL_INCLUDES@
+gzsig_SOURCES = gzsig.c key.c sign.c ssh.c ssh2.c util.c verify.c x509.c
+gzsig_LDADD = @LIBOBJS@ @KNLIB@ @OPENSSL_LDFLAGS@ @OPENSSL_LIBS@ -lresolv
 man_MANS = gzsig.1
-EXTRA_DIST = LICENSE err.h kn.h kn.c $(man_MANS)
+EXTRA_DIST = LICENSE $(man_MANS)
 DISTCLEANFILES = *~
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
