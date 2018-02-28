@@ -9,12 +9,12 @@ jobs:
 
     steps:
       - run: apt-get update 
-      - run: apt-get install -y build-essential libssl-dev curl git automake
+      - run: apt-get install -y build-essential libssl-dev curl git automake libtool
       - checkout
       - run: git fetch --unshallow || true
-      - run: automake
+      - run: autoreconf -i 
       - run: ./configure
-      - run: make
+      - run: make all gzsig-static
       - run: make install
       - add_ssh_keys
 
