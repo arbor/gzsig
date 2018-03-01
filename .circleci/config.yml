@@ -1,0 +1,28 @@
+version: 2.0
+jobs:
+  build:
+    working_directory: ~/build
+    docker:
+      - image: ubuntu:16.04
+
+    
+
+    steps:
+      - run: apt-get update 
+      - run: apt-get install -y build-essential libssl-dev curl git automake libtool
+      - checkout
+      - run: git fetch --unshallow || true
+      - run: autoreconf -i 
+      - run: ./configure
+      - run: make all gzsig-static
+      - run: make install
+      - add_ssh_keys
+
+      - deploy:
+          name: Deploy to Github
+          command: |
+            if [ "$CIRCLE_PROJECT_USERNAME" == "packetloop" ]; then
+              if [[ "$CIRCLE_BRANCH" == "master" ]]; then
+                ./release.sh
+              fi
+            fi

@@ -1,5 +1,6 @@
 
-AC_INIT(gzsig.c)
+AC_INIT
+AC_CONFIG_SRCDIR([gzsig.c])
 AC_CONFIG_MACRO_DIRS([m4])
 
 AM_INIT_AUTOMAKE(gzsig, 0.1)
@@ -35,7 +36,7 @@ AC_ARG_WITH(keynote,
 	KNINC="-I$withval"
 	KNLIB="-L$withval -lkeynote"
     else
-	AC_ERROR(keynote.h or libkeynote.a not found in $withval)
+	AC_MSG_ERROR(keynote.h or libkeynote.a not found in $withval)
     fi
     have_keynote=yes
     ;;
@@ -68,8 +69,10 @@ AX_CHECK_OPENSSL([
 ],
 [
     AC_MSG_RESULT(no)
-    AC_ERROR(OpenSSL not found)
+    AC_MSG_ERROR(OpenSSL not found)
 ])
+
+LT_INIT([dlopen])
 
 dnl Checks for header files.
 AC_HEADER_STDC
@@ -87,4 +90,5 @@ AC_CHECK_LIB(m, pow)
 AC_REPLACE_FUNCS(err)
 
 AX_CREATE_STDINT_H(gzsig-int.h)
-AC_OUTPUT(Makefile)
+AC_CONFIG_FILES([Makefile])
+AC_OUTPUT

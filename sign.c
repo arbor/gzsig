@@ -205,8 +205,13 @@ sign_passwd_cb(char *buf, int size, int rwflag, void *u)
 		buf[strcspn(buf, "\n")] = '\0';
 	} else {
 		p = getpass("Enter passphrase: ");
+#ifdef __linux__
+		if (strncpy(buf, p, size) >= size)
+			errx(1, "Passphrase too long");
+#else
 		if (strlcpy(buf, p, size) >= size)
 			errx(1, "Passphrase too long");
+#endif
 		memset(p, 0, strlen(p));
 	}
 

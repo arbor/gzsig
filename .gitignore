@@ -1,1 +1,10 @@
+config.*
+gzsig
+gzsig-static
+gzsig-int.h
 autom4te.cache/
+Makefile
+Makefile.in
+configure
+libtool
+ltmain.sh

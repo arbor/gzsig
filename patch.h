@@ -50,4 +50,10 @@
 
 #endif
 
+#ifdef __linux__
+
+#define letoh16(x) le16toh(x)
+
+#endif
+
 #endif /* PATCH_H */
